@@ -29,10 +29,45 @@ function randomColor() {
     a: random() * 1
   };
 }
-
-function createBuffer(gl, attrib, setting) {
-  const buffer = gl.createBuffer();
-  gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
-  gl.vertexAttribPointer(attrib, setting.size, setting.type, setting.normalize, setting.stribe, setting.offset);
-  return buffer;
+// 创建圆的点
+function createCircleVertex(x, y, radius, n) {
+  const sin = Math.sin;
+  const cos = Math.cos;
+  var positions = [x, y, 255, 0, 0, 1];
+  for (let i = 0; i <= n; i++) {
+    var angle = i * Math.PI * 2 / n;
+    positions.push(x + radius * sin(angle), y + radius * cos(angle), 255, 0, 0, 1);
+  }
+  return positions;
+}
+// 创建环形的positions数据
+function createRingVertex(x, y, innerRadius, outerRadius, n) {
+  const sin = Math.sin;
+  const cos = Math.cos;
+  var positions = [];
+  var color = randomColor();
+  for (var i = 0; i <= n; i++) {
+    if (i % 2 == 0) {
+      color = randomColor();
+    }
+    var angle = i * Math.PI * 2 / n;
+    positions.push(x + innerRadius * sin(angle), y + innerRadius * cos(angle), color.r, color.g, color.b, color.a);
+    positions.push(x + outerRadius * sin(angle), y + outerRadius * cos(angle), color.r, color.g, color.b, color.a);
+  }
+  var indices = [];
+  for (var i = 0; i < n; i++) {
+    var p0 = i * 2;
+    var p1 = i * 2 + 1;
+    var p2 = (i + 1) * 2 + 1;
+    var p3 = (i + 1) * 2;
+    if (i == n - 1) {
+      p2 = 1;
+      p3 = 0;
+    }
+    indices.push(p0, p1, p2, p2, p3, p0);
+  }
+  return {
+    positions: positions,
+    indices: indices
+  };
 }
