@@ -68,15 +68,13 @@
   gl.enableVertexAttribArray(a_Color);
 
   var positions = [
-    30, 30, 255, 0, 0, 1, //V0
-    30, 300, 255, 0, 0, 1, //V1
-    300, 300, 255, 0, 0, 1, //V2
-    300, 30, 0, 255, 0, 1 //V3
+    165, 165, 255, 255, 0, 1, //V0
+    30, 30, 255, 0, 0, 1, //V1
+    30, 300, 255, 0, 0, 1, //V2
+    300, 300, 255, 0, 0, 1, //V3
+    300, 30, 0, 255, 0, 1, //V4
+    30, 30, 255, 0, 0, 1, //V1
   ]
-  var indices = [
-    0, 1, 2, //第一个三角形
-    0, 2, 3 //第二个三角形
-  ];
 
   let buffer = gl.createBuffer();
   gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
@@ -84,14 +82,14 @@
   gl.vertexAttribPointer(a_Color, 4, gl.FLOAT, false, 24, 8);
   gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(positions), gl.STATIC_DRAW);
 
-  var indicesBuffer = gl.createBuffer();
-  gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indicesBuffer);
-  gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint8Array(indices), gl.STATIC_DRAW);
-  
+  // var indicesBuffer = gl.createBuffer();
+  // gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indicesBuffer);
+  // gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint8Array(indices), gl.STATIC_DRAW);
+
 
   gl.clearColor(0, 0, 0, 1.0);
   render(gl);
-
+  gl.enable(gl.CULL_FACE);
   // canvas.addEventListener('mouseup', e => {
   //   positions.push(e.pageX, e.pageY);
   //   var color = randomColor();
@@ -113,7 +111,7 @@
       return;
     }
     //因为我们要绘制 N 个点，所以执行 N 次顶点绘制操作。
-    gl.drawElements(gl.TRIANGLES, 6, gl.UNSIGNED_BYTE, 0);
+    gl.drawArrays(gl.TRIANGLE_FAN, 0, positions.length / 6);
   }
 </script>
 

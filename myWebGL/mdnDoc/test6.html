@@ -8,21 +8,21 @@
 <body onload="">
   <!-- 顶点着色器源码 -->
   <script type="shader-source" id="vertexShader">
-    //设置浮点数精度为中等精度
     precision mediump float;
     // 接收顶点坐标 (x, y)
     attribute vec2 a_Position;
-    // 接收 canvas 的尺寸(width, height)
+    // 接收 canvas 尺寸(width, height)
     attribute vec2 a_Screen_Size;
-    //接收 JavaScript 传递的顶点颜色
-    attribute vec4 a_Color;
-    //传往片元着色器的颜色。
-    varying vec4 v_Color;
+    // 接收JavaScript传递过来的顶点 uv 坐标。
+    attribute vec2 a_Uv;
+    // 将接收的uv坐标传递给片元着色器
+    varying vec2 v_Uv;
     void main(){
       vec2 position = (a_Position / a_Screen_Size) * 2.0 - 1.0;
       position = position * vec2(1.0,-1.0);
-      gl_Position = vec4(position, 0.0, 1.0);
-      v_Color = a_Color;
+      gl_Position = vec4(position, 0, 1);
+      // 将接收到的uv坐标传递给片元着色器
+      v_Uv = a_Uv;
     }
    </script>
 
@@ -31,12 +31,13 @@
     //设置浮点数据类型为中级精度
     precision mediump float;
     //接收 JavaScript 传过来的颜色值（rgba）。
-    varying vec4 v_Color;
-    
-    void main(){
-       vec4 color = v_Color / vec4(255, 255, 255, 1);
-       gl_FragColor = color;
-    }
+    varying vec2 v_Uv;
+	  // 接收 JavaScript 传递过来的纹理
+	  uniform sampler2D u_Texture;
+	  void main(){
+	  	// 提取纹理对应uv坐标上的颜色，赋值给当前片元（像素）。
+    	gl_FragColor = texture2D(u_Texture, vec2(v_Uv.x, v_Uv.y));
+	  }
    </script>
   <canvas id="canvas" width="640" height="480">
     你的浏览器不支持html5新特性请升级或更换浏览器。
@@ -63,57 +64,59 @@
 
   //找到顶点着色器中的变量a_Position
   var a_Position = gl.getAttribLocation(program, 'a_Position');
-  var a_Color = gl.getAttribLocation(program, 'a_Color');
+  var a_Uv = gl.getAttribLocation(program, 'a_Uv');
   gl.enableVertexAttribArray(a_Position);
-  gl.enableVertexAttribArray(a_Color);
+  gl.enableVertexAttribArray(a_Uv);
+  var u_Texture = gl.getUniformLocation(program, "u_Texture");
+
+  var img = new Image();
+  img.crossOrigin = '';
+  img.src = "F:/myPersonalProgram/myCanvas/myWebGL/mdnDoc/1.png";
+  img.onload = textureLoadedCallback;
 
   var positions = [
-    30, 30, 255, 0, 0, 1, //V0
-    30, 300, 255, 0, 0, 1, //V1
-    300, 300, 255, 0, 0, 1, //V2
-    300, 30, 0, 255, 0, 1 //V3
-  ]
-  var indices = [
-    0, 1, 2, //第一个三角形
-    0, 2, 3 //第二个三角形
+    30, 30, 0, 0, //V0
+    30, 300, 0, 1, //V1
+    300, 300, 1, 1, //V2
+    30, 30, 0, 0, //V0
+    300, 300, 1, 1, //V2
+    300, 30, 1, 0 //V3
   ];
 
   let buffer = gl.createBuffer();
   gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
-  gl.vertexAttribPointer(a_Position, 2, gl.FLOAT, false, 24, 0);
-  gl.vertexAttribPointer(a_Color, 4, gl.FLOAT, false, 24, 8);
+  gl.vertexAttribPointer(a_Position, 2, gl.FLOAT, false, 16, 0);
+  gl.vertexAttribPointer(a_Uv, 4, gl.FLOAT, false, 16, 8);
   gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(positions), gl.STATIC_DRAW);
 
-  var indicesBuffer = gl.createBuffer();
-  gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indicesBuffer);
-  gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint8Array(indices), gl.STATIC_DRAW);
-  
+  // var indicesBuffer = gl.createBuffer();
+  // gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indicesBuffer);
+  // gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(indices), gl.STATIC_DRAW);
 
-  gl.clearColor(0, 0, 0, 1.0);
-  render(gl);
+  gl.activeTexture(gl.TEXTURE0);
+  var texture = gl.createTexture();
+  gl.bindTexture(gl.TEXTURE_2D, texture);
 
-  // canvas.addEventListener('mouseup', e => {
-  //   positions.push(e.pageX, e.pageY);
-  //   var color = randomColor();
-  //   //将随机颜色的 rgba 值添加到顶点的颜色数组中。
-  //   positions.push(color.r, color.g, color.b, color.a);
-  //   if (positions.length % 18 == 0) {
-  //     //向缓冲区中复制新的顶点数据。
-  //     gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
-  //     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(positions), gl.STATIC_DRAW);
-  //     //重新渲染
-  //     render(gl);
-  //   }
-  // })
+  function textureLoadedCallback() {
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img);
+    gl.texParameterf(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    gl.texParameterf(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+    gl.uniform1i(uniformTexture, 0);
+    render();
+  }
 
-  function render(gl) {
-    //用上一步设置的清空画布颜色清空画布。
+
+
+  // gl.clearColor(0, 0, 0, 1.0);
+  // render(gl);
+  // gl.enable(gl.CULL_FACE);
+
+  function render() {
     gl.clear(gl.COLOR_BUFFER_BIT);
     if (positions.length <= 0) {
       return;
     }
-    //因为我们要绘制 N 个点，所以执行 N 次顶点绘制操作。
-    gl.drawElements(gl.TRIANGLES, 6, gl.UNSIGNED_BYTE, 0);
+    gl.drawArrays(gl.TRIANGLES, 0, positions.length / 4);
   }
 </script>
 
